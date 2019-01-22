@@ -30,6 +30,9 @@ class AdaptiveStepsizeODESolver(object):
         for i in range(1, len(t)):
             y = self.advance(t[i])
             solution.append(y)
+
+        # print (len(tuple(map(torch.stack, tuple(zip(*solution))))[0]))
+        # print ("*******************")
         return tuple(map(torch.stack, tuple(zip(*solution))))
 
 

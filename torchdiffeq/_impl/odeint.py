@@ -71,6 +71,11 @@ def odeint(func, y0, t, rtol=1e-7, atol=1e-9, method=None, options=None):
     solver = SOLVERS[method](func, y0, rtol=rtol, atol=atol, **options)
     solution = solver.integrate(t)
 
+    # #1000 points
+    # print (solution[0].shape)
+    # print (tensor_input)
+    # print ("***********************")
+
     if tensor_input:
         solution = solution[0]
     return solution

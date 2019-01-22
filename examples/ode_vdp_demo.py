@@ -26,16 +26,15 @@ else:
 
 device = torch.device('cuda:' + str(args.gpu) if torch.cuda.is_available() else 'cpu')
 
-true_y0 = torch.tensor([[2., 0.]])
-t = torch.linspace(0., 25., args.data_size)
+true_y0 = torch.tensor([[0.5, 0.15]])
+t = torch.linspace(0., 250., args.data_size)
 true_A = torch.tensor([[-0.1, 2.0], [-2.0, -0.1]])
-
 
 class Lambda(nn.Module):
 
     def forward(self, t, y):
-        # print(torch.mm(y**3, true_A).shape)
-        return torch.mm(y**3, true_A)
+
+        return torch.tensor([ [y[0,1], (-0.1-y[0,0]**2)*y[0,1]-y[0,0]] ])
 
 
 with torch.no_grad():
@@ -46,22 +45,7 @@ def get_batch():
     s = torch.from_numpy(np.random.choice(np.arange(args.data_size - args.batch_time), args.batch_size, replace=False))
     batch_y0 = true_y[s]  # (M, D)
     batch_t = t[:args.batch_time]  # (T)
-    # print (s)
-    # print (s+1)
-    # print (true_y)
-    tmp = [true_y[s + i] for i in range(args.batch_time)]
     batch_y = torch.stack([true_y[s + i] for i in range(args.batch_time)], dim=0)  # (T, M, D)
-
-    print (tmp[0])
-
-    # print ("shape of s \t", s.shape)
-    # print ("len of tmp \t", len(tmp))
-    # print ("len of first elem of tmp \t", tmp[0].shape)
-    # print ("shape of truey \t", true_y.shape)
-    # print ("shape of batchy0 \t",batch_y0.shape)
-    # print ("shape of batchy \t",batch_y.shape)
-
-    print(adf)
 
     return batch_y0, batch_t, batch_y
 
@@ -72,7 +56,7 @@ def makedirs(dirname):
 
 
 if args.viz:
-    makedirs('png')
+    makedirs('png_vdp')
     import matplotlib.pyplot as plt
     fig = plt.figure(figsize=(12, 4), facecolor='white')
     ax_traj = fig.add_subplot(131, frameon=False)
@@ -120,7 +104,7 @@ def visualize(true_y, pred_y, odefunc, itr):
         ax_vecfield.set_ylim(-2, 2)
 
         fig.tight_layout()
-        plt.savefig('png/{:03d}'.format(itr))
+        plt.savefig('png_vdp/{:03d}'.format(itr))
         plt.draw()
         plt.pause(0.001)
 
@@ -142,7 +126,7 @@ class ODEFunc(nn.Module):
                 nn.init.constant_(m.bias, val=0)
 
     def forward(self, t, y):
-        return self.net(y**3)
+        return self.net(y)
 
 
 class RunningAverageMeter(object):
