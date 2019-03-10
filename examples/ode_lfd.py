@@ -14,7 +14,7 @@ random.seed(0)
 
 parser = argparse.ArgumentParser('ODE demo')
 parser.add_argument('--method', type=str, choices=['dopri5', 'adams'], default='dopri5')
-parser.add_argument('--data_size', type=int, default=1000)
+parser.add_argument('--data_size', type=int, default=2000)
 parser.add_argument('--batch_time', type=int, default=10)
 parser.add_argument('--batch_size', type=int, default=20)
 parser.add_argument('--niters', type=int, default=10000)
@@ -31,11 +31,18 @@ else:
 
 device = torch.device('cuda:' + str(args.gpu) if torch.cuda.is_available() else 'cpu')
 
+# print (device)
+
 true_y = load_demo()
+
+# print(true_y.shape)
 
 true_y0 = true_y[0,:]
 
-t = torch.linspace(0., 250., args.data_size)
+data_size = true_y.shape[0]
+# print (data_size)
+t = torch.linspace(0., 250., data_size)
+
 # true_A = torch.tensor([[-0.1, 2.0], [-2.0, -0.1]])
 
 # class Lambda(nn.Module):
@@ -52,7 +59,7 @@ t = torch.linspace(0., 250., args.data_size)
 
 
 def get_batch():
-    s = torch.from_numpy(np.random.choice(np.arange(args.data_size - args.batch_time), args.batch_size, replace=False))
+    s = torch.from_numpy(np.random.choice(np.arange(data_size - args.batch_time), args.batch_size, replace=False))
     batch_y0 = true_y[s]  # (M, D)
     batch_t = t[:args.batch_time]  # (T)
     batch_y = torch.stack([true_y[s + i] for i in range(args.batch_time)], dim=0)  # (T, M, D)
@@ -114,7 +121,7 @@ def visualize(true_y, pred_y, odefunc, itr):
         # ax_vecfield.set_ylim(-2, 2)
 
         fig.tight_layout()
-        plt.savefig('png_lfd/{:03d}'.format(itr))
+        # plt.savefig('png_lfd/{:03d}'.format(itr))
         plt.draw()
         plt.pause(0.001)
 
@@ -167,7 +174,7 @@ if __name__ == '__main__':
     ii = 0
 
     func = ODEFunc()
-    optimizer = optim.RMSprop(func.parameters(), lr=1e-4)
+    optimizer = optim.SGD(func.parameters(), lr=1e-4)
     end = time.time()
 
     time_meter = RunningAverageMeter(0.97)
@@ -177,7 +184,8 @@ if __name__ == '__main__':
         optimizer.zero_grad()
         batch_y0, batch_t, batch_y = get_batch()
         pred_y = odeint(func, batch_y0, batch_t)
-        loss = torch.mean(torch.abs(pred_y - batch_y))
+        # loss = torch.mean(torch.abs(pred_y - batch_y))
+        loss = nn.MSELoss(reduction='sum')(pred_y , batch_y) 
         loss.backward()
         optimizer.step()
 
